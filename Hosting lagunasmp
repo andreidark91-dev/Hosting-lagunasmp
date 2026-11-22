@@ -1,1 +1,70 @@
 HOSTING lagunasmp 
+const mineflayer = require('mineflayer');
+
+// Configurarea botului
+const config = {
+  host: 'localhost',      // IP-ul serverului (ex: 'play.server.ro')
+  port: 25565,            // Portul serverului (implicit 25565)
+  username: 'BotAFK_01',  // Numele botului (pentru servere cracked/offline)
+  // auth: 'microsoft',   // Decomentează această linie dacă serverul este Premium (Online-mode)
+  version: false          // Detectează automat versiunea serverului (sau pune ex: '1.20.4')
+};
+
+let antiAfkInterval;
+
+function createBot() {
+  const bot = mineflayer.createBot(config);
+
+  bot.on('login', () => {
+    console.log(`[INFO] ${bot.username} s-a conectat pe ${config.host}!`);
+  });
+
+  bot.on('spawn', () => {
+    console.log('[INFO] Botul a intrat în joc. Pornire sistem Anti-AFK...');
+    
+    // Dacă serverul cere /login sau /register, decomentează liniile de mai jos:
+    // bot.chat('/register parola123 parola123');
+    // bot.chat('/login parola123');
+
+    // Sistem Anti-AFK: sare și mișcă capul la fiecare 30 de secunde
+    antiAfkInterval = setInterval(() => {
+      // Mișcă privirea aleatoriu
+      const yaw = Math.random() * Math.PI * 2;
+      const pitch = (Math.random() - 0.5) * Math.PI;
+      bot.look(yaw, pitch);
+
+      // Sare scurt
+      bot.setControlState('jump', true);
+      setTimeout(() => {
+        bot.setControlState('jump', false);
+      }, 500);
+
+      // Dă din mână (swing arm)
+      bot.swingArm();
+    }, 30000); // 30000 ms = 30 secunde
+  });
+
+  // Afișează mesajele din chat în consolă (util pentru a vedea dacă cere /login)
+  bot.on('messagestr', (message) => {
+    console.log(`[CHAT] ${message}`);
+  });
+
+  // Reconectare automată dacă primește kick
+  bot.on('kicked', (reason) => {
+    console.log(`[KICK] Botul a primit kick: ${reason}`);
+  });
+
+  // Reconectare automată la deconectare sau eroare
+  bot.on('end', () => {
+    console.log('[INFO] Deconectat. Se încearcă reconectarea în 10 secunde...');
+    clearInterval(antiAfkInterval);
+    setTimeout(createBot, 10000);
+  });
+
+  bot.on('error', (err) => {
+    console.log(`[EROARE] ${err.message}`);
+  });
+}
+
+// Pornește botul
+createBot();
